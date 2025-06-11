@@ -1,0 +1,86 @@
+version: '3.8'
+
+services:
+  # MongoDB - Banco NoSQL
+  mongodb:
+    image: mongo:latest
+    container_name: eshop_mongodb
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: eshop123
+      MONGO_INITDB_DATABASE: eshop_db
+    volumes:
+      - mongodb_data:/data/db
+      - ./config/mongodb_init.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - eshop_network
+
+  # Redis - Cache e processamento em tempo real
+  redis:
+    image: redis:alpine
+    container_name: eshop_redis
+    restart: always
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - eshop_network
+
+  # PostgreSQL - Banco relacional (opcional, mas útil para comparações)
+  postgres:
+    image: postgres:15
+    container_name: eshop_postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: eshop_user
+      POSTGRES_PASSWORD: eshop123
+      POSTGRES_DB: eshop_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - eshop_network
+
+  # Aplicação Streamlit
+  streamlit:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: eshop_streamlit
+    restart: always
+    ports:
+      - "8501:8501"
+    environment:
+      - MONGODB_URI=mongodb://admin:eshop123@mongodb:27017/
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=eshop_user
+      - POSTGRES_PASSWORD=eshop123
+      - POSTGRES_DB=eshop_db
+    depends_on:
+      - mongodb
+      - redis
+      - postgres
+    volumes:
+      - ./app:/app
+      - ./data:/data
+    networks:
+      - eshop_network
+    command: streamlit run app.py --server.port=8501 --server.address=0.0.0.0
+
+volumes:
+  mongodb_data:
+  redis_data:
+  postgres_data:
+
+networks:
+  eshop_network:
+    driver: bridge
