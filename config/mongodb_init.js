@@ -17,7 +17,6 @@ db.produtos.createIndex({ "nome": "text" }); // Índice de texto para busca
 db.pedidos.createIndex({ "cliente_id": 1 });
 db.pedidos.createIndex({ "data_pedido": -1 }); // Índice para ordenar por data do pedido
 
-// Opcional: Inserir alguns dados iniciais básicos se o banco estiver vazio
 if (db.clientes.countDocuments({}) === 0) {
     print("Inserindo dados iniciais de exemplo no MongoDB...");
     db.clientes.insertMany([
